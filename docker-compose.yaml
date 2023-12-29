@@ -1,0 +1,51 @@
+version: '3'
+
+networks:
+  app-nnm:
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    container_name: app-nginx
+    ports:
+      - "8080:80"
+    networks:
+      - app-nnm
+    depends_on:
+      - nodejs
+
+  nodejs:
+    build:
+      context: .
+      dockerfile: Dockerfile.nodejs
+    container_name: app-nodejs 
+    command: sh -c "npm init -y && npm install mysql express --save && node app.js"  
+    networks:
+      - app-nnm
+    env_file:
+      - .env  
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:5.7
+    container_name: app-mysql
+    command: --innodb-use-native-aio=0
+    restart: always
+    networks:
+      - app-nnm
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/initdb:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "${MYSQL_HOST}", "-u", "${MYSQL_USER}", "-p${MYSQL_ROOT_PASSWORD}", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 2
+      start_period: 0s
