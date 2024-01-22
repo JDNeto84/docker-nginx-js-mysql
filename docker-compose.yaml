@@ -22,6 +22,8 @@ services:
       dockerfile: Dockerfile.nodejs
     container_name: app-nodejs 
     command: sh -c "npm init -y && npm install mysql express --save && node app.js"  
+    volumes:
+      - ./nodejs:/usr/src/app
     networks:
       - app-nnm
     env_file:
